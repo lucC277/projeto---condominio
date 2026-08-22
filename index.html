@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Gestão de Condomínio</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { text-align: center; color: #333; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #666; }
+        input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        #mensagem { margin-top: 15px; text-align: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Entrar no Condomínio</h2>
+        <div class="input-group">
+            <label>E-mail:</label>
+            <input type="email" id="email" placeholder="Digite seu e-mail">
+        </div>
+        <div class="input-group">
+            <label>Senha:</label>
+            <input type="password" id="senha" placeholder="Digite sua senha">
+        </div>
+        <button onclick="fazerLogin()">Entrar</button>
+        <div id="mensagem"></div>
+    </div>
+
+    <script>
+        async function fazerLogin() {
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            const msgDiv = document.getElementById('mensagem');
+
+            try {
+                const resposta = await fetch('http://localhost:8000/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+
+                const dados = await resposta.json();
+
+                if (resposta.ok) {
+                    msgDiv.style.color = 'green';
+                    msgDiv.innerText = `Bem-vindo, ${dados.usuario}! (${dados.is_sindico ? 'Síndico' : 'Morador'})`;
+                } else {
+                    msgDiv.style.color = 'red';
+                    msgDiv.innerText = dados.detail || "Erro ao fazer login.";
+                }
+            } catch (error) {
+                msgDiv.style.color = 'red';
+                msgDiv.innerText = "Erro ao conectar com o servidor.";
+            }
+        }
+    </script>
+</body>
+</html>
