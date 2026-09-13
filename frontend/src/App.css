@@ -1,0 +1,590 @@
+/* Layout Global */
+.vet-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Caixa de destaque do logotipo (SíndicoHub) */
+.brand-badge-box {
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  color: #ffffff;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: -0.5px;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.brand-badge-box.large {
+  width: 54px;
+  height: 54px;
+  font-size: 1.7rem;
+  border-radius: 14px;
+  margin-bottom: 0.5rem;
+}
+
+/* Sidebar Estilo SaaS */
+.vet-sidebar {
+  width: 250px;
+  background-color: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem 1rem;
+}
+
+.vet-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.5rem 1.5rem 0.5rem;
+}
+
+.brand-info h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+
+.brand-info span {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.menu-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  padding: 1rem 0.75rem 0.4rem;
+}
+
+.vet-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease-in-out;
+}
+
+.nav-link:hover {
+  background-color: #f8fafc;
+  color: var(--text-main);
+}
+
+.nav-link.active {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.sidebar-user {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.user-avatar-info {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.avatar-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--text-main);
+  font-size: 0.85rem;
+}
+
+.user-text-info strong {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-main);
+}
+
+.user-text-info small {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.btn-icon-logout {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.3rem;
+  border-radius: 6px;
+}
+
+.btn-icon-logout:hover {
+  background-color: var(--danger-light);
+}
+
+/* Área Principal */
+.vet-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.vet-header {
+  padding: 1.25rem 2.5rem;
+  background: transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title-group h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.page-title-group p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+/* Banner de Boas-Vindas */
+.welcome-banner {
+  margin: 0 2.5rem 1.5rem;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #dcfce7 0%, #ecfdf5 100%);
+  border-radius: var(--radius-lg);
+  border: 1px solid #bbf7d0;
+}
+
+.welcome-banner h2 {
+  font-size: 1.35rem;
+  color: #065f46;
+  font-weight: 800;
+}
+
+.welcome-banner p {
+  color: #047857;
+  font-size: 0.88rem;
+  margin-top: 0.25rem;
+}
+
+/* Ações Rápidas */
+.quick-actions-bar {
+  margin: 0 2.5rem 1.5rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.quick-action-card {
+  flex: 1;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.quick-action-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.quick-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background-color: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.quick-action-card h5 {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.quick-action-card span {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Cards de Métricas (KPIs) */
+.vet-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin: 0 2.5rem 1.75rem;
+}
+
+.vet-kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.kpi-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.vet-kpi-card h3 {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 0.5rem;
+}
+
+/* Área de Listagem e Toolbar */
+.vet-content {
+  padding: 0 2.5rem 2.5rem;
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+}
+
+.search-box {
+  flex: 1;
+  max-width: 420px;
+  position: relative;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.65rem 1rem 0.65rem 2.4rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  font-size: 0.88rem;
+  outline: none;
+  background: white;
+}
+
+.search-box input:focus {
+  border-color: var(--primary);
+}
+
+.search-box .search-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+}
+
+.filter-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.filter-pill {
+  border: 1px solid var(--border);
+  background: white;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.filter-pill.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.btn-primary-action {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.btn-primary-action:hover {
+  background: var(--primary-hover);
+}
+
+/* Coleção de Cards */
+.cards-collection {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+.pet-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pet-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.pet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.pet-profile-group {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.pet-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+.pet-title h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pet-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.tag-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+}
+
+.tag-pending {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.tag-success {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.pet-body {
+  margin: 1rem 0;
+  padding: 0.85rem 0;
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.pet-body p {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.pet-body strong {
+  color: var(--text-main);
+}
+
+.pet-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-card-action {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.btn-card-action:hover {
+  background-color: #f8fafc;
+}
+
+.btn-card-action.primary {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+}
+
+.btn-card-action.primary:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-dialog {
+  background: white;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 480px;
+  padding: 2rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header-row h3 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--text-light);
+  cursor: pointer;
+}
+
+.vet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-field label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.form-field input, .form-field textarea {
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  font-size: 0.88rem;
+  outline: none;
+}
+
+.form-field input:focus, .form-field textarea:focus {
+  border-color: var(--primary);
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* Login */
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-main);
+}
+
+.login-card-vet {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
