@@ -1,6 +1,27 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
 from datetime import datetime
 from backend.database import Base
+
+
+class Aviso(Base):
+    __tablename__ = "avisos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    titulo = Column(String, nullable=False)
+    conteudo = Column(Text, nullable=False)
+    tipo = Column(String, default="comunicado", index=True)
+    fixado = Column(Boolean, default=False)
+    data_publicacao = Column(DateTime, default=datetime.utcnow)
+
+class EscalaPlantao(Base):
+    __tablename__ = "escalas_plantao"
+
+    id = Column(Integer, primary_key=True, index=True)
+    funcionario_nome = Column(String, nullable=False)
+    cargo = Column(String, default="Porteiro")
+    turno = Column(String, nullable=False)
+    telefone_contato = Column(String, nullable=True)
+    em_servico = Column(Boolean, default=True)
 
 class Usuario(Base):
     __tablename__ = "usuarios"

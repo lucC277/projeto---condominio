@@ -1,5 +1,4 @@
-```markdown
-# 🏢 SíndicoHub - Sistema de Gestão Condominial
+# 🏢 SíndicoHub - Sistema de Gestão de Condomínio
 
 Plataforma SaaS moderna para gestão integrada de condomínios, desenvolvida com arquitetura desacoplada (FastAPI + React + PostgreSQL). O sistema foca no controle e digitalização de fluxo de portaria, gestão de encomendas com baixa em tempo real e autenticação baseada em perfis de acesso.
 
@@ -18,6 +17,7 @@ Plataforma SaaS moderna para gestão integrada de condomínios, desenvolvida com
 ## 📋 Pré-requisitos para Instalação
 
 Antes de começar, certifique-se de ter instalado em sua máquina:
+
 1. **Git:** [Download Git](https://git-scm.com/)
 2. **Python 3.11+ ou 3.13:** [Download Python](https://www.python.org/) *(Lembre-se de marcar a opção "Add Python to PATH" durante a instalação)*.
 3. **Node.js (v18 ou superior) & npm:** [Download Node.js](https://nodejs.org/)
@@ -28,11 +28,12 @@ Antes de começar, certifique-se de ter instalado em sua máquina:
 ## 🚀 Guia Passo a Passo de Instalação e Execução
 
 ### 1. Clonar o Repositório
+
 Abra o terminal (PowerShell, Bash ou CMD) e clone o projeto:
+
 ```bash
 git clone [https://github.com/lucC277/projeto---condominio.git](https://github.com/lucC277/projeto---condominio.git)
 cd projeto---condominio
-
 ```
 
 ---
@@ -83,8 +84,9 @@ uvicorn backend.main:app --reload --port 8000
 
 ```
 
-* **API local:** `http://localhost:8000`
-* **Swagger interativo (OpenAPI):** `http://localhost:8000/docs`
+- **API local:** `http://localhost:8000`
+
+- **Swagger interativo (OpenAPI):** `http://localhost:8000/docs`
 
 ---
 
@@ -104,7 +106,7 @@ npm run dev
 
 ```
 
-* **Aplicação Web:** `http://localhost:5173`
+- **Aplicação Web:** `http://localhost:5173`
 
 ---
 
@@ -148,9 +150,9 @@ projeto---condominio/
 
 ## 🧪 Resolução de Problemas Comuns
 
-* **Erro de conexão com o banco (`connection to server at localhost:5432 failed`):** Verifique se o container Docker está rodando executando `docker ps`. Se necessário, reinicie com `docker compose down && docker compose up -d`.
-* **Erro de script desabilitado no PowerShell (`Execution_Policies`):** Se der erro ao rodar `Activate.ps1`, execute no PowerShell como Administrador: `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`.
-* **Erro de Módulo (`ModuleNotFoundError: No module named 'backend'`):** Certifique-se de executar o comando `uvicorn backend.main:app` a partir da pasta raiz do projeto e com a virtualenv ativada.
+- **Erro de conexão com o banco (`connection to server at localhost:5432 failed`):** Verifique se o container Docker está rodando executando `docker ps`. Se necessário, reinicie com `docker compose down && docker compose up -d`.
+- **Erro de script desabilitado no PowerShell (`Execution_Policies`):** Se der erro ao rodar `Activate.ps1`, execute no PowerShell como Administrador: `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`.
+- **Erro de Módulo (`ModuleNotFoundError: No module named 'backend'`):** Certifique-se de executar o comando `uvicorn backend.main:app` a partir da pasta raiz do projeto e com a virtualenv ativada.
 
 ---
 

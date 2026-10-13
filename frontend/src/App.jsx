@@ -1,448 +1,609 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import './App.css';
 
-const API_URL = 'http://localhost:8000';
-
-function App() {
+export default function App() {
+  // Estados de Autenticação
+  const [token, setToken] = useState(null);
   const [usuario, setUsuario] = useState(null);
-  const [abaAtiva, setAbaAtiva] = useState('inicio');
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [erroLogin, setErroLogin] = useState('');
 
-  const [emailLogin, setEmailLogin] = useState('morador@email.com');
-  const [senhaLogin, setSenhaLogin] = useState('senhaSegura123');
-
+  // Estados dos Módulos do Sistema
   const [encomendas, setEncomendas] = useState([]);
-  const [ocorrencias, setOcorrencias] = useState([]);
-  const [busca, setBusca] = useState('');
-  const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [avisos, setAvisos] = useState([]);
+  const [normas, setNormas] = useState([]);
+  const [plantoes, setPlantoes] = useState([]);
+  const [carregando, setCarregando] = useState(false);
 
-  const [modalEncomenda, setModalEncomenda] = useState(false);
-  const [modalOcorrencia, setModalOcorrencia] = useState(false);
-
-  const [novaEnc, setNovaEnc] = useState({ destinatario: '', bloco: '', apartamento: '', descricao_pacote: '' });
-  const [novaOc, setNovaOc] = useState({ titulo: '', descricao: '' });
-
+  // 1. Função de Login
   const handleLogin = async (e) => {
     e.preventDefault();
+    setErroLogin('');
+    setCarregando(true);
+
     try {
-      const res = await axios.post(`${API_URL}/login`, { email: emailLogin, senha: senhaLogin });
-      setUsuario(res.data.usuario);
+      const response = await fetch('http://localhost:8000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.mensagem || 'E-mail ou senha incorretos.');
+      }
+
+      setToken(data.access_token || 'token_sessao_ativa');
+      setUsuario(data.usuario || { nome: 'Lucas Mendes', perfil: 'sindico', email });
     } catch (err) {
-      alert('Credenciais inválidas.');
+      setErroLogin(err.message);
+    } finally {
+      setCarregando(false);
     }
   };
 
-  const carregarDados = async () => {
-    try {
-      const encRes = await axios.get(`${API_URL}/encomendas`);
-      const ocRes = await axios.get(`${API_URL}/ocorrencias`);
-      setEncomendas(encRes.data);
-      setOcorrencias(ocRes.data);
-    } catch (err) {
-      console.error(err);
-    }
+  // 2. Carregamento dos dados após autenticação
+  const carregarDadosDashboard = () => {
+    // Carregar Encomendas (AC1)
+    fetch('http://localhost:8000/encomendas')
+      .then((res) => res.json())
+      .then((data) => setEncomendas(Array.isArray(data) ? data : []))
+      .catch((err) => console.error('Erro ao buscar encomendas:', err));
+
+    // Carregar Mural de Avisos (AC2)
+    fetch('http://localhost:8000/avisos?tipo=comunicado')
+      .then((res) => res.json())
+      .then((data) => setAvisos(Array.isArray(data) ? data : []))
+      .catch((err) => console.error('Erro ao buscar comunicados:', err));
+
+    // Carregar Normas de Convivência (AC2)
+    fetch('http://localhost:8000/avisos?tipo=norma')
+      .then((res) => res.json())
+      .then((data) => setNormas(Array.isArray(data) ? data : []))
+      .catch((err) => console.error('Erro ao buscar normas:', err));
+
+    // Carregar Plantão da Portaria (AC2)
+    fetch('http://localhost:8000/plantao')
+      .then((res) => res.json())
+      .then((data) => setPlantoes(Array.isArray(data) ? data : []))
+      .catch((err) => console.error('Erro ao buscar plantão:', err));
   };
 
   useEffect(() => {
-    if (usuario) carregarDados();
-  }, [usuario]);
+    if (token) {
+      carregarDadosDashboard();
+    }
+  }, [token]);
 
-  const handleCriarEncomenda = async (e) => {
-    e.preventDefault();
+  // 3. Dar baixa / Retirar encomenda (AC1)
+  const handleBaixaEncomenda = async (id) => {
     try {
-      await axios.post(`${API_URL}/encomendas`, novaEnc);
-      setNovaEnc({ destinatario: '', bloco: '', apartamento: '', descricao_pacote: '' });
-      setModalEncomenda(false);
-      carregarDados();
+      const response = await fetch(`http://localhost:8000/encomendas/${id}/retirar`, {
+        method: 'PUT'
+      });
+
+      if (response.ok) {
+        setEncomendas((prev) =>
+          prev.map((enc) => (enc.id === id ? { ...enc, retirado: true } : enc))
+        );
+      }
     } catch (err) {
-      alert('Erro ao salvar encomenda.');
+      console.error('Erro ao dar baixa:', err);
     }
   };
 
-  const handleDarBaixa = async (id) => {
-    try {
-      await axios.patch(`${API_URL}/encomendas/${id}/retirar`);
-      carregarDados();
-    } catch (err) {
-      alert('Erro ao dar baixa.');
-    }
+  // 4. Logout
+  const handleLogout = () => {
+    setToken(null);
+    setUsuario(null);
+    setEmail('');
+    setSenha('');
   };
 
-  const handleCriarOcorrencia = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post(`${API_URL}/ocorrencias`, novaOc);
-      setNovaOc({ titulo: '', descricao: '' });
-      setModalOcorrencia(false);
-      carregarDados();
-    } catch (err) {
-      alert('Erro ao registrar ocorrência.');
-    }
-  };
-
-  const totalPendentes = encomendas.filter(e => !e.retirado).length;
-  const totalEntregues = encomendas.filter(e => e.retirado).length;
-  const totalOcorrencias = ocorrencias.length;
-
-  const encomendasFiltradas = encomendas.filter(e => {
-    const match = e.destinatario.toLowerCase().includes(busca.toLowerCase()) || 
-                  e.apartamento.includes(busca) || 
-                  e.descricao_pacote.toLowerCase().includes(busca.toLowerCase());
-    if (filtroStatus === 'pendentes') return match && !e.retirado;
-    if (filtroStatus === 'retirados') return match && e.retirado;
-    return match;
-  });
-
-  if (!usuario) {
+  // --- TELA DE LOGIN ---
+  if (!token) {
     return (
-      <div className="login-screen">
-        <div className="login-card-vet">
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-            <div className="brand-badge-box large">S</div>
-          </div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '0.25rem' }}>SíndicoHub</h2>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-            Plataforma de Gestão Condominial
-          </p>
-          <form onSubmit={handleLogin} className="vet-form">
-            <div className="form-field">
-              <label>E-MAIL</label>
-              <input type="email" value={emailLogin} onChange={(e) => setEmailLogin(e.target.value)} required />
+      <div style={styles.loginContainer}>
+        <div style={styles.loginCard}>
+          <div style={styles.logoBadge}>🏢</div>
+          <h2 style={styles.loginTitle}>SíndicoHub</h2>
+          <p style={styles.loginSubtitle}>Gestão Condominial Integrada</p>
+
+          {erroLogin && <div style={styles.alertaErro}>{erroLogin}</div>}
+
+          <form onSubmit={handleLogin} style={styles.form}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>E-mail</label>
+              <input
+                type="email"
+                required
+                placeholder="sindico@sindicohub.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={styles.input}
+              />
             </div>
-            <div className="form-field">
-              <label>SENHA</label>
-              <input type="password" value={senhaLogin} onChange={(e) => setSenhaLogin(e.target.value)} required />
+
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Senha</label>
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                style={styles.input}
+              />
             </div>
-            <button type="submit" className="btn-primary-action" style={{ justifyContent: 'center', marginTop: '0.5rem' }}>
-              Entrar na Plataforma
+
+            <button type="submit" disabled={carregando} style={styles.btnPrimario}>
+              {carregando ? 'Validando credenciais...' : 'Entrar na Plataforma'}
             </button>
           </form>
+
+          <div style={styles.loginFooter}>
+            <small>Acesso seguro com criptografia Bcrypt & FastAPI</small>
+          </div>
         </div>
       </div>
     );
   }
 
+  // --- DASHBOARD PRINCIPAL INTEGRADO (AC1 + AC2) ---
   return (
-    <div className="vet-layout">
-      {/* Sidebar Lateral */}
-      <aside className="vet-sidebar">
-        <div>
-          <div className="vet-brand">
-            <div className="brand-badge-box">S</div>
-            <div className="brand-info">
-              <h2>SíndicoHub</h2>
-              <span>Gestão Integrada</span>
-            </div>
-          </div>
-
-          <div className="menu-section-label">Navegação Principal</div>
-          <nav className="vet-nav">
-            <button className={`nav-link ${abaAtiva === 'inicio' ? 'active' : ''}`} onClick={() => setAbaAtiva('inicio')}>
-              🏠 Página Inicial
-            </button>
-            <button className={`nav-link ${abaAtiva === 'encomendas' ? 'active' : ''}`} onClick={() => setAbaAtiva('encomendas')}>
-              📦 Encomendas
-            </button>
-            <button className={`nav-link ${abaAtiva === 'ocorrencias' ? 'active' : ''}`} onClick={() => setAbaAtiva('ocorrencias')}>
-              ⚠️ Ocorrências
-            </button>
-          </nav>
-
-          <div className="menu-section-label">Administração</div>
-          <nav className="vet-nav">
-            <button className="nav-link" onClick={() => alert('Módulo de Comunicados e Regras planejado para a AC3')}>
-              📢 Mural & Regras
-            </button>
-            <button className="nav-link" onClick={() => alert('Módulo de Reformas e Vagas planejado para a Prova Final')}>
-              🚗 Garagem & Vagas
-            </button>
-          </nav>
+    <div style={styles.appContainer}>
+      {/* CABEÇALHO */}
+      <header style={styles.header}>
+        <div style={styles.headerBrand}>
+          <span style={styles.brandIcon}>🏢</span>
+          <h2 style={{ margin: 0, fontSize: '20px', color: '#1b4332' }}>SíndicoHub</h2>
         </div>
-
-        <div className="sidebar-user">
-          <div className="user-avatar-info">
-            <div className="avatar-circle">{usuario.nome.charAt(0)}</div>
-            <div className="user-text-info">
-              <strong>{usuario.nome}</strong>
-              <small>{usuario.perfil.toUpperCase()}</small>
-            </div>
-          </div>
-          <button className="btn-icon-logout" onClick={() => setUsuario(null)} title="Sair">🚪</button>
+        <div style={styles.headerUser}>
+          <span style={{ fontSize: '14px', color: '#2d6a4f' }}>
+            Conectado como: <strong>{usuario?.nome || 'Usuário'}</strong> ({usuario?.perfil || 'Síndico'})
+          </span>
+          <button onClick={handleLogout} style={styles.btnSair}>Sair</button>
         </div>
-      </aside>
+      </header>
 
-      {/* Conteúdo Principal */}
-      <main className="vet-main">
-        <header className="vet-header">
-          <div className="page-title-group">
-            <h1>
-              {abaAtiva === 'inicio' && 'Visão Geral'}
-              {abaAtiva === 'encomendas' && 'Gestão de Encomendas'}
-              {abaAtiva === 'ocorrencias' && 'Central de Ocorrências'}
-            </h1>
-            <p>
-              {abaAtiva === 'inicio' && 'Cuidando de todos os detalhes do condomínio com agilidade.'}
-              {abaAtiva === 'encomendas' && 'Controle de recebimento e entrega de pacotes na portaria.'}
-              {abaAtiva === 'ocorrencias' && 'Chamados e mediação direta entre moradores e administração.'}
-            </p>
+      <main style={styles.mainContent}>
+        {/* BARRA OPERACIONAL: PLANTÃO DA PORTARIA (AC2) */}
+        <section style={styles.plantaoBar}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={styles.statusOnline}>●</span>
+            <strong>Plantão da Portaria em Tempo Real:</strong>
           </div>
-
-          <div>
-            {abaAtiva === 'encomendas' && (
-              <button className="btn-primary-action" onClick={() => setModalEncomenda(true)}>
-                + Nova Encomenda
-              </button>
+          <div style={styles.plantaoInfo}>
+            {plantoes.length > 0 ? (
+              plantoes.map((p) => (
+                <span key={p.id} style={{ fontSize: '14px' }}>
+                  <strong>{p.funcionario_nome}</strong> ({p.cargo}) — Turno: {p.turno} — Contato: {p.telefone_contato || 'Ramal 100'}
+                </span>
+              ))
+            ) : (
+              <span style={{ fontSize: '14px', color: '#555' }}>Carlos Portaria (Porteiro Líder) — Turno Diurno — Ramal 100</span>
             )}
-            {abaAtiva === 'ocorrencias' && (
-              <button className="btn-primary-action" onClick={() => setModalOcorrencia(true)}>
-                + Nova Ocorrência
-              </button>
-            )}
-          </div>
-        </header>
-
-        {/* Banner de Boas-Vindas */}
-        {abaAtiva === 'inicio' && (
-          <>
-            <div className="welcome-banner">
-              <h2>Boa tarde! Que bom ter você aqui 🏢</h2>
-              <p>Gerencie encomendas, acompanhe avisos e consulte ocorrências em tempo real.</p>
-            </div>
-
-            <div className="quick-actions-bar">
-              <div className="quick-action-card" onClick={() => { setAbaAtiva('encomendas'); setModalEncomenda(true); }}>
-                <div className="quick-icon">📦</div>
-                <div>
-                  <h5>Nova Encomenda</h5>
-                  <span>Registrar pacote na portaria</span>
-                </div>
-              </div>
-              <div className="quick-action-card" onClick={() => { setAbaAtiva('ocorrencias'); setModalOcorrencia(true); }}>
-                <div className="quick-icon">⚠️</div>
-                <div>
-                  <h5>Nova Ocorrência</h5>
-                  <span>Abrir chamado para o síndico</span>
-                </div>
-              </div>
-              <div className="quick-action-card" onClick={() => setAbaAtiva('encomendas')}>
-                <div className="quick-icon">🔍</div>
-                <div>
-                  <h5>Consultar Baixas</h5>
-                  <span>Visualizar pacotes entregues</span>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Cards de Métricas (KPIs) */}
-        <section className="vet-kpis">
-          <div className="vet-kpi-card">
-            <span className="kpi-title">Pendentes na Portaria</span>
-            <h3>{totalPendentes}</h3>
-          </div>
-          <div className="vet-kpi-card">
-            <span className="kpi-title">Entregues / Retirados</span>
-            <h3>{totalEntregues}</h3>
-          </div>
-          <div className="vet-kpi-card">
-            <span className="kpi-title">Ocorrências Totais</span>
-            <h3>{totalOcorrencias}</h3>
-          </div>
-          <div className="vet-kpi-card">
-            <span className="kpi-title">Status da API</span>
-            <h3 style={{ color: 'var(--primary)', fontSize: '1.25rem', marginTop: '0.85rem' }}>Online 🟢</h3>
           </div>
         </section>
 
-        {/* Conteúdo: Encomendas */}
-        {(abaAtiva === 'encomendas' || abaAtiva === 'inicio') && (
-          <section className="vet-content">
-            <div className="table-toolbar">
-              <div className="search-box">
-                <span className="search-icon">🔍</span>
-                <input 
-                  type="text" 
-                  placeholder="Buscar por morador, apartamento ou pacote..." 
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                />
-              </div>
-              <div className="filter-group">
-                <button className={`filter-pill ${filtroStatus === 'todos' ? 'active' : ''}`} onClick={() => setFiltroStatus('todos')}>Todos</button>
-                <button className={`filter-pill ${filtroStatus === 'pendentes' ? 'active' : ''}`} onClick={() => setFiltroStatus('pendentes')}>Pendentes</button>
-                <button className={`filter-pill ${filtroStatus === 'retirados' ? 'active' : ''}`} onClick={() => setFiltroStatus('retirados')}>Retirados</button>
-              </div>
+        {/* CARDS DE MÉTRICAS / KPIS */}
+        <section style={styles.kpiGrid}>
+          <div style={styles.kpiCard}>
+            <span style={styles.kpiLabel}>Total de Encomendas</span>
+            <span style={styles.kpiValue}>{encomendas.length}</span>
+          </div>
+          <div style={styles.kpiCard}>
+            <span style={styles.kpiLabel}>Pendentes de Retirada</span>
+            <span style={{ ...styles.kpiValue, color: '#e76f51' }}>
+              {encomendas.filter((e) => !e.retirado).length}
+            </span>
+          </div>
+          <div style={styles.kpiCard}>
+            <span style={styles.kpiLabel}>Avisos Publicados</span>
+            <span style={{ ...styles.kpiValue, color: '#2a9d8f' }}>{avisos.length}</span>
+          </div>
+        </section>
+
+        {/* GRID PRINCIPAL: ENCOMENDAS (AC1) + MURAL & NORMAS (AC2) */}
+        <div style={styles.dashboardGrid}>
+          {/* COLUNA ESQUERDA: GESTÃO DE ENCOMENDAS (AC1) */}
+          <section style={styles.sectionCard}>
+            <div style={styles.sectionHeader}>
+              <h3 style={styles.sectionTitle}>📦 Controle de Encomendas</h3>
+              <button onClick={carregarDadosDashboard} style={styles.btnRecarregar}>Atualizar</button>
             </div>
 
-            <div className="cards-collection">
-              {encomendasFiltradas.map((item) => (
-                <div key={item.id} className="pet-card">
-                  <div>
-                    <div className="pet-header">
-                      <div className="pet-profile-group">
-                        <div className="pet-avatar">📦</div>
-                        <div className="pet-title">
-                          <h4>{item.descricao_pacote}</h4>
-                          <span className="pet-subtitle">Apto {item.apartamento} • Bloco {item.bloco}</span>
-                        </div>
-                      </div>
-                      <span className={`tag-badge ${item.retirado ? 'tag-success' : 'tag-pending'}`}>
-                        {item.retirado ? 'Retirado' : 'Pendente'}
-                      </span>
-                    </div>
-
-                    <div className="pet-body">
-                      <p><span>Destinatário:</span> <strong>{item.destinatario}</strong></p>
-                      <p><span>Local:</span> <strong>Portaria Principal</strong></p>
-                    </div>
-                  </div>
-
-                  <div className="pet-actions">
-                    {!item.retirado ? (
-                      <button className="btn-card-action primary" onClick={() => handleDarBaixa(item.id)}>
-                        ✓ Dar Baixa
-                      </button>
-                    ) : (
-                      <button className="btn-card-action" disabled style={{ opacity: 0.6, cursor: 'default' }}>
-                        Entregue
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Conteúdo: Ocorrências */}
-        {abaAtiva === 'ocorrencias' && (
-          <section className="vet-content">
-            <div className="cards-collection">
-              {ocorrencias.map((oc) => (
-                <div key={oc.id} className="pet-card">
-                  <div>
-                    <div className="pet-header">
-                      <div className="pet-profile-group">
-                        <div className="pet-avatar" style={{ background: 'var(--warning-light)' }}>⚠️</div>
-                        <div className="pet-title">
-                          <h4>{oc.titulo}</h4>
-                          <span className="pet-subtitle">Chamado #{oc.id}</span>
-                        </div>
-                      </div>
-                      <span className="tag-badge tag-pending">{oc.status}</span>
-                    </div>
-                    <div className="pet-body">
-                      <p style={{ flexDirection: 'column', gap: '0.25rem' }}>
-                        <span>Descrição:</span>
-                        <strong>{oc.descricao}</strong>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div style={styles.tableContainer}>
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.tableHeaderRow}>
+                    <th style={styles.th}>Destinatário</th>
+                    <th style={styles.th}>Unidade</th>
+                    <th style={styles.th}>Código</th>
+                    <th style={styles.th}>Status</th>
+                    <th style={styles.th}>Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {encomendas.length > 0 ? (
+                    encomendas.map((enc) => (
+                      <tr key={enc.id} style={styles.tableRow}>
+                        <td style={styles.td}><strong>{enc.destinatario}</strong></td>
+                        <td style={styles.td}>{enc.bloco} - Apt {enc.apartamento}</td>
+                        <td style={styles.td}><code>{enc.codigo_rastreio || 'PORT-00' + enc.id}</code></td>
+                        <td style={styles.td}>
+                          <span style={enc.retirado ? styles.badgeRetirado : styles.badgePendente}>
+                            {enc.retirado ? 'Retirado' : 'Pendente'}
+                          </span>
+                        </td>
+                        <td style={styles.td}>
+                          {!enc.retirado ? (
+                            <button
+                              onClick={() => handleBaixaEncomenda(enc.id)}
+                              style={styles.btnBaixa}
+                            >
+                              Dar Baixa
+                            </button>
+                          ) : (
+                            <span style={{ color: '#6c757d', fontSize: '13px' }}>Concluído</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
+                        Nenhuma encomenda registrada.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </section>
-        )}
+
+          {/* COLUNA DIREITA: COMUNICAÇÃO & NORMAS (AC2) */}
+          <div style={styles.sideColumn}>
+            {/* 1. MURAL INFORMATIVO */}
+            <section style={styles.sectionCard}>
+              <h3 style={styles.sectionTitle}>📢 Mural Informativo</h3>
+              <div style={styles.cardsList}>
+                {avisos.length > 0 ? (
+                  avisos.map((av) => (
+                    <div
+                      key={av.id}
+                      style={{
+                        ...styles.avisoItem,
+                        backgroundColor: av.fixado ? '#fffde7' : '#ffffff',
+                        borderColor: av.fixado ? '#ffe082' : '#e0e0e0'
+                      }}
+                    >
+                      <div style={styles.avisoHead}>
+                        <span style={styles.avisoTitulo}>
+                          {av.fixado && '📌 '}<strong>{av.titulo}</strong>
+                        </span>
+                      </div>
+                      <p style={styles.avisoTexto}>{av.conteudo}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p style={{ color: '#888', fontSize: '14px' }}>Nenhum comunicado ativo.</p>
+                )}
+              </div>
+            </section>
+
+            {/* 2. REGIMENTO & NORMAS DE CONVIVÊNCIA */}
+            <section style={styles.sectionCard}>
+              <h3 style={styles.sectionTitle}>📜 Normas de Conduta</h3>
+              <div style={styles.cardsList}>
+                {normas.length > 0 ? (
+                  normas.map((norma) => (
+                    <div key={norma.id} style={styles.normaItem}>
+                      <span style={styles.normaTitulo}>• {norma.titulo}</span>
+                      <p style={styles.normaTexto}>{norma.conteudo}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p style={{ color: '#888', fontSize: '14px' }}>Regimento interno em atualização.</p>
+                )}
+              </div>
+            </section>
+          </div>
+        </div>
       </main>
-
-      {/* Modal Nova Encomenda */}
-      {modalEncomenda && (
-        <div className="modal-backdrop">
-          <div className="modal-dialog">
-            <div className="modal-header-row">
-              <h3>Nova Encomenda</h3>
-              <button className="btn-close-modal" onClick={() => setModalEncomenda(false)}>✕</button>
-            </div>
-            <form onSubmit={handleCriarEncomenda} className="vet-form">
-              <div className="form-field">
-                <label>NOME DO DESTINATÁRIO</label>
-                <input 
-                  type="text" 
-                  placeholder="Ex: Carlos Souza" 
-                  value={novaEnc.destinatario} 
-                  onChange={(e) => setNovaEnc({...novaEnc, destinatario: e.target.value})} 
-                  required 
-                />
-              </div>
-              <div className="form-grid-2">
-                <div className="form-field">
-                  <label>BLOCO</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ex: A" 
-                    value={novaEnc.bloco} 
-                    onChange={(e) => setNovaEnc({...novaEnc, bloco: e.target.value})} 
-                    required 
-                  />
-                </div>
-                <div className="form-field">
-                  <label>APARTAMENTO</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ex: 102" 
-                    value={novaEnc.apartamento} 
-                    onChange={(e) => setNovaEnc({...novaEnc, apartamento: e.target.value})} 
-                    required 
-                  />
-                </div>
-              </div>
-              <div className="form-field">
-                <label>DESCRIÇÃO DO PACOTE</label>
-                <input 
-                  type="text" 
-                  placeholder="Ex: Caixa Amazon - Livros" 
-                  value={novaEnc.descricao_pacote} 
-                  onChange={(e) => setNovaEnc({...novaEnc, descricao_pacote: e.target.value})} 
-                  required 
-                />
-              </div>
-              <button type="submit" className="btn-primary-action" style={{ justifyContent: 'center', marginTop: '0.5rem' }}>
-                Cadastrar Encomenda
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Nova Ocorrência */}
-      {modalOcorrencia && (
-        <div className="modal-backdrop">
-          <div className="modal-dialog">
-            <div className="modal-header-row">
-              <h3>Nova Ocorrência</h3>
-              <button className="btn-close-modal" onClick={() => setModalOcorrencia(false)}>✕</button>
-            </div>
-            <form onSubmit={handleCriarOcorrencia} className="vet-form">
-              <div className="form-field">
-                <label>TÍTULO</label>
-                <input 
-                  type="text" 
-                  placeholder="Ex: Barulho após 22h" 
-                  value={novaOc.titulo} 
-                  onChange={(e) => setNovaOc({...novaOc, titulo: e.target.value})} 
-                  required 
-                />
-              </div>
-              <div className="form-field">
-                <label>DESCRIÇÃO DETALHADA</label>
-                <textarea 
-                  rows="4" 
-                  placeholder="Relate o ocorrido com detalhes..." 
-                  value={novaOc.descricao} 
-                  onChange={(e) => setNovaOc({...novaOc, descricao: e.target.value})} 
-                  required 
-                />
-              </div>
-              <button type="submit" className="btn-primary-action" style={{ justifyContent: 'center', marginTop: '0.5rem' }}>
-                Registrar Chamado
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-export default App;
+// ESTILOS EM LINHA (SaaS Moderno / VetCare Palette)
+const styles = {
+  loginContainer: {
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f0fdf4',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  },
+  loginCard: {
+    backgroundColor: '#ffffff',
+    padding: '36px',
+    borderRadius: '12px',
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.06)',
+    width: '100%',
+    maxWidth: '400px',
+    textAlign: 'center'
+  },
+  logoBadge: {
+    fontSize: '36px',
+    marginBottom: '8px'
+  },
+  loginTitle: {
+    margin: 0,
+    fontSize: '24px',
+    color: '#1b4332'
+  },
+  loginSubtitle: {
+    margin: '4px 0 24px 0',
+    color: '#52b788',
+    fontSize: '14px'
+  },
+  alertaErro: {
+    backgroundColor: '#fee2e2',
+    color: '#b91c1c',
+    padding: '10px',
+    borderRadius: '6px',
+    fontSize: '13px',
+    marginBottom: '16px'
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px',
+    textAlign: 'left'
+  },
+  inputGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px'
+  },
+  label: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#2d3748'
+  },
+  input: {
+    padding: '10px 12px',
+    borderRadius: '6px',
+    border: '1px solid #cbd5e1',
+    fontSize: '14px',
+    outline: 'none'
+  },
+  btnPrimario: {
+    backgroundColor: '#2d6a4f',
+    color: '#ffffff',
+    border: 'none',
+    padding: '12px',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    marginTop: '8px'
+  },
+  loginFooter: {
+    marginTop: '20px',
+    color: '#94a3b8'
+  },
+  appContainer: {
+    minHeight: '100vh',
+    backgroundColor: '#f8fafc',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '14px 28px',
+    backgroundColor: '#ffffff',
+    borderBottom: '1px solid #e2e8f0'
+  },
+  headerBrand: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  brandIcon: {
+    fontSize: '22px'
+  },
+  headerUser: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px'
+  },
+  btnSair: {
+    backgroundColor: 'transparent',
+    border: '1px solid #cbd5e1',
+    padding: '6px 12px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '12px',
+    color: '#475569'
+  },
+  mainContent: {
+    padding: '24px 28px',
+    maxWidth: '1280px',
+    margin: '0 auto'
+  },
+  plantaoBar: {
+    backgroundColor: '#d8f3dc',
+    border: '1px solid #b7e4c7',
+    padding: '12px 18px',
+    borderRadius: '8px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+    color: '#1b4332',
+    flexWrap: 'wrap',
+    gap: '10px'
+  },
+  statusOnline: {
+    color: '#2d6a4f',
+    fontSize: '16px'
+  },
+  plantaoInfo: {
+    color: '#2d6a4f'
+  },
+  kpiGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '16px',
+    marginBottom: '20px'
+  },
+  kpiCard: {
+    backgroundColor: '#ffffff',
+    padding: '18px',
+    borderRadius: '8px',
+    border: '1px solid #e2e8f0',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px'
+  },
+  kpiLabel: {
+    fontSize: '13px',
+    color: '#64748b'
+  },
+  kpiValue: {
+    fontSize: '24px',
+    fontWeight: '700',
+    color: '#1b4332'
+  },
+  dashboardGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1.6fr 1.2fr',
+    gap: '20px'
+  },
+  sideColumn: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px'
+  },
+  sectionCard: {
+    backgroundColor: '#ffffff',
+    padding: '20px',
+    borderRadius: '8px',
+    border: '1px solid #e2e8f0'
+  },
+  sectionHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '16px'
+  },
+  sectionTitle: {
+    margin: 0,
+    fontSize: '16px',
+    color: '#1e293b'
+  },
+  btnRecarregar: {
+    backgroundColor: 'transparent',
+    border: 'none',
+    color: '#2d6a4f',
+    cursor: 'pointer',
+    fontSize: '13px',
+    fontWeight: '600'
+  },
+  tableContainer: {
+    overflowX: 'auto'
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    textAlign: 'left'
+  },
+  tableHeaderRow: {
+    borderBottom: '2px solid #f1f5f9'
+  },
+  th: {
+    padding: '10px 12px',
+    fontSize: '12px',
+    textTransform: 'uppercase',
+    color: '#64748b',
+    fontWeight: '600'
+  },
+  tableRow: {
+    borderBottom: '1px solid #f1f5f9'
+  },
+  td: {
+    padding: '12px',
+    fontSize: '14px',
+    color: '#334155'
+  },
+  badgePendente: {
+    backgroundColor: '#fef3c7',
+    color: '#b45309',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: '600'
+  },
+  badgeRetirado: {
+    backgroundColor: '#dcfce7',
+    color: '#15803d',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    fontWeight: '600'
+  },
+  btnBaixa: {
+    backgroundColor: '#2d6a4f',
+    color: '#ffffff',
+    border: 'none',
+    padding: '6px 10px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    cursor: 'pointer'
+  },
+  cardsList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    marginTop: '12px'
+  },
+  avisoItem: {
+    padding: '12px 14px',
+    borderRadius: '6px',
+    border: '1px solid #e2e8f0'
+  },
+  avisoHead: {
+    marginBottom: '6px'
+  },
+  avisoTitulo: {
+    fontSize: '14px',
+    color: '#0f172a'
+  },
+  avisoTexto: {
+    margin: 0,
+    fontSize: '13px',
+    color: '#475569',
+    lineHeight: '1.4'
+  },
+  normaItem: {
+    backgroundColor: '#f8fafc',
+    padding: '10px 14px',
+    borderRadius: '6px',
+    borderLeft: '3px solid #2d6a4f'
+  },
+  normaTitulo: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#1e293b'
+  },
+  normaTexto: {
+    margin: '4px 0 0 0',
+    fontSize: '12px',
+    color: '#64748b',
+    lineHeight: '1.4'
+  }
+};

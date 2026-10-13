@@ -1,24 +1,38 @@
-from pydantic import BaseModel
+from datetime import datetime
 from typing import Optional
+from pydantic import BaseModel
 
-class UsuarioBase(BaseModel):
-    nome: str
-    email: str
-    perfil: str
+class AvisoBase(BaseModel):
+    titulo: str
+    conteudo: str
+    tipo: str = "comunicado"
+    fixado: bool = False
 
-class UsuarioCreate(UsuarioBase):
-    senha: str
+class AvisoCreate(AvisoBase):
+    pass
 
-class UsuarioLogin(BaseModel):
-    email: str
-    senha: str
-
-class UsuarioResponse(UsuarioBase):
+class AvisoResponse(AvisoBase):
     id: int
+    data_publicacao: datetime
 
     class Config:
         from_attributes = True
 
+class EscalaPlantaoBase(BaseModel):
+    funcionario_nome: str
+    cargo: str
+    turno: str
+    telefone_contato: Optional[str] = None
+    em_servico: bool = True
+
+class EscalaPlantaoCreate(EscalaPlantaoBase):
+    pass
+
+class EscalaPlantaoResponse(EscalaPlantaoBase):
+    id: int
+
+    class Config:
+        from_attributes = True
 
 class EncomendaBase(BaseModel):
     destinatario: str
