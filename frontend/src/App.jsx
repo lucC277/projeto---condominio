@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from 'react';
 
 export default function App() {
-  // Estados de Autenticação
   const [token, setToken] = useState(null);
   const [usuario, setUsuario] = useState(null);
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erroLogin, setErroLogin] = useState('');
 
-  // Estados dos Módulos do Sistema
   const [encomendas, setEncomendas] = useState([]);
   const [avisos, setAvisos] = useState([]);
   const [normas, setNormas] = useState([]);
   const [plantoes, setPlantoes] = useState([]);
+  const [abaAtiva, setAbaAtiva] = useState('encomendas');
+  const [filtroTexto, setFiltroTexto] = useState('');
   const [carregando, setCarregando] = useState(false);
 
-  // 1. Função de Login
   const handleLogin = async (e) => {
     e.preventDefault();
     setErroLogin('');
@@ -35,7 +34,7 @@ export default function App() {
       }
 
       setToken(data.access_token || 'token_sessao_ativa');
-      setUsuario(data.usuario || { nome: 'Lucas Mendes', perfil: 'sindico', email });
+      setUsuario(data.usuario || { nome: 'Lucas Ricardo', perfil: 'sindico', email });
     } catch (err) {
       setErroLogin(err.message);
     } finally {
@@ -43,40 +42,34 @@ export default function App() {
     }
   };
 
-  // 2. Carregamento dos dados após autenticação
-  const carregarDadosDashboard = () => {
-    // Carregar Encomendas (AC1)
+  const carregarDados = () => {
     fetch('http://localhost:8000/encomendas')
       .then((res) => res.json())
       .then((data) => setEncomendas(Array.isArray(data) ? data : []))
-      .catch((err) => console.error('Erro ao buscar encomendas:', err));
+      .catch((err) => console.error('Erro ao carregar encomendas:', err));
 
-    // Carregar Mural de Avisos (AC2)
     fetch('http://localhost:8000/avisos?tipo=comunicado')
       .then((res) => res.json())
       .then((data) => setAvisos(Array.isArray(data) ? data : []))
-      .catch((err) => console.error('Erro ao buscar comunicados:', err));
+      .catch((err) => console.error('Erro ao carregar avisos:', err));
 
-    // Carregar Normas de Convivência (AC2)
     fetch('http://localhost:8000/avisos?tipo=norma')
       .then((res) => res.json())
       .then((data) => setNormas(Array.isArray(data) ? data : []))
-      .catch((err) => console.error('Erro ao buscar normas:', err));
+      .catch((err) => console.error('Erro ao carregar normas:', err));
 
-    // Carregar Plantão da Portaria (AC2)
     fetch('http://localhost:8000/plantao')
       .then((res) => res.json())
       .then((data) => setPlantoes(Array.isArray(data) ? data : []))
-      .catch((err) => console.error('Erro ao buscar plantão:', err));
+      .catch((err) => console.error('Erro ao carregar escala de plantão:', err));
   };
 
   useEffect(() => {
     if (token) {
-      carregarDadosDashboard();
+      carregarDados();
     }
   }, [token]);
 
-  // 3. Dar baixa / Retirar encomenda (AC1)
   const handleBaixaEncomenda = async (id) => {
     try {
       const response = await fetch(`http://localhost:8000/encomendas/${id}/retirar`, {
@@ -93,7 +86,6 @@ export default function App() {
     }
   };
 
-  // 4. Logout
   const handleLogout = () => {
     setToken(null);
     setUsuario(null);
@@ -101,16 +93,23 @@ export default function App() {
     setSenha('');
   };
 
-  // --- TELA DE LOGIN ---
+  const encomendasFiltradas = encomendas.filter((enc) =>
+    enc.destinatario.toLowerCase().includes(filtroTexto.toLowerCase()) ||
+    enc.apartamento.includes(filtroTexto) ||
+    enc.bloco.toLowerCase().includes(filtroTexto.toLowerCase())
+  );
+
+  const plantaoAtual = plantoes.length > 0 ? plantoes[0] : null;
+
   if (!token) {
     return (
-      <div style={styles.loginContainer}>
-        <div style={styles.loginCard}>
-          <div style={styles.logoBadge}>🏢</div>
-          <h2 style={styles.loginTitle}>SíndicoHub</h2>
-          <p style={styles.loginSubtitle}>Gestão Condominial Integrada</p>
+      <div style={styles.loginWrapper}>
+        <div style={styles.loginBox}>
+          <div style={styles.brandIconLarge}>🏢</div>
+          <h2 style={styles.titleLogin}>SíndicoHub</h2>
+          <p style={styles.subLogin}>Gestão Condominial Descomplicada</p>
 
-          {erroLogin && <div style={styles.alertaErro}>{erroLogin}</div>}
+          {erroLogin && <div style={styles.erroBox}>{erroLogin}</div>}
 
           <form onSubmit={handleLogin} style={styles.form}>
             <div style={styles.inputGroup}>
@@ -137,221 +136,250 @@ export default function App() {
               />
             </div>
 
-            <button type="submit" disabled={carregando} style={styles.btnPrimario}>
-              {carregando ? 'Validando credenciais...' : 'Entrar na Plataforma'}
+            <button type="submit" disabled={carregando} style={styles.btnPrimary}>
+              {carregando ? 'Autenticando...' : 'Entrar na Plataforma'}
             </button>
           </form>
-
-          <div style={styles.loginFooter}>
-            <small>Acesso seguro com criptografia Bcrypt & FastAPI</small>
-          </div>
         </div>
       </div>
     );
   }
 
-  // --- DASHBOARD PRINCIPAL INTEGRADO (AC1 + AC2) ---
   return (
-    <div style={styles.appContainer}>
-      {/* CABEÇALHO */}
-      <header style={styles.header}>
-        <div style={styles.headerBrand}>
-          <span style={styles.brandIcon}>🏢</span>
-          <h2 style={{ margin: 0, fontSize: '20px', color: '#1b4332' }}>SíndicoHub</h2>
+    <div style={styles.container}>
+      <header style={styles.navbar}>
+        <div style={styles.navBrand}>
+          <span style={styles.logoMark}>🏢</span>
+          <div>
+            <h1 style={styles.brandText}>SíndicoHub</h1>
+            <span style={styles.tagline}>Portal Operacional</span>
+          </div>
         </div>
-        <div style={styles.headerUser}>
-          <span style={{ fontSize: '14px', color: '#2d6a4f' }}>
-            Conectado como: <strong>{usuario?.nome || 'Usuário'}</strong> ({usuario?.perfil || 'Síndico'})
-          </span>
-          <button onClick={handleLogout} style={styles.btnSair}>Sair</button>
+
+        <div style={styles.navRight}>
+          {plantaoAtual && (
+            <div style={styles.plantaoPill}>
+              <span style={styles.pulsingDot}>●</span>
+              <span>
+                <strong>Portaria:</strong> {plantaoAtual.funcionario_nome} ({plantaoAtual.turno})
+              </span>
+            </div>
+          )}
+
+          <div style={styles.userProfile}>
+            <div style={styles.avatar}>
+              {usuario?.nome ? usuario.nome.charAt(0) : 'U'}
+            </div>
+            <div style={styles.userInfo}>
+              <span style={styles.userName}>{usuario?.nome}</span>
+              <span style={styles.userRole}>{usuario?.perfil}</span>
+            </div>
+            <button onClick={handleLogout} style={styles.btnLogout}>Sair</button>
+          </div>
         </div>
       </header>
 
-      <main style={styles.mainContent}>
-        {/* BARRA OPERACIONAL: PLANTÃO DA PORTARIA (AC2) */}
-        <section style={styles.plantaoBar}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={styles.statusOnline}>●</span>
-            <strong>Plantão da Portaria em Tempo Real:</strong>
+      <main style={styles.content}>
+        <div style={styles.metricsRow}>
+          <div style={styles.metricCard}>
+            <span style={styles.metricLabel}>Total de Encomendas</span>
+            <span style={styles.metricNumber}>{encomendas.length}</span>
           </div>
-          <div style={styles.plantaoInfo}>
-            {plantoes.length > 0 ? (
-              plantoes.map((p) => (
-                <span key={p.id} style={{ fontSize: '14px' }}>
-                  <strong>{p.funcionario_nome}</strong> ({p.cargo}) — Turno: {p.turno} — Contato: {p.telefone_contato || 'Ramal 100'}
-                </span>
-              ))
-            ) : (
-              <span style={{ fontSize: '14px', color: '#555' }}>Carlos Portaria (Porteiro Líder) — Turno Diurno — Ramal 100</span>
-            )}
-          </div>
-        </section>
-
-        {/* CARDS DE MÉTRICAS / KPIS */}
-        <section style={styles.kpiGrid}>
-          <div style={styles.kpiCard}>
-            <span style={styles.kpiLabel}>Total de Encomendas</span>
-            <span style={styles.kpiValue}>{encomendas.length}</span>
-          </div>
-          <div style={styles.kpiCard}>
-            <span style={styles.kpiLabel}>Pendentes de Retirada</span>
-            <span style={{ ...styles.kpiValue, color: '#e76f51' }}>
+          <div style={styles.metricCard}>
+            <span style={styles.metricLabel}>Aguardando Retirada</span>
+            <span style={{ ...styles.metricNumber, color: '#e07a5f' }}>
               {encomendas.filter((e) => !e.retirado).length}
             </span>
           </div>
-          <div style={styles.kpiCard}>
-            <span style={styles.kpiLabel}>Avisos Publicados</span>
-            <span style={{ ...styles.kpiValue, color: '#2a9d8f' }}>{avisos.length}</span>
+          <div style={styles.metricCard}>
+            <span style={styles.metricLabel}>Avisos Ativos</span>
+            <span style={{ ...styles.metricNumber, color: '#3d5a80' }}>
+              {avisos.length}
+            </span>
           </div>
-        </section>
+          <div style={styles.metricCard}>
+            <span style={styles.metricLabel}>Normas Cadastradas</span>
+            <span style={{ ...styles.metricNumber, color: '#2a9d8f' }}>
+              {normas.length}
+            </span>
+          </div>
+        </div>
 
-        {/* GRID PRINCIPAL: ENCOMENDAS (AC1) + MURAL & NORMAS (AC2) */}
-        <div style={styles.dashboardGrid}>
-          {/* COLUNA ESQUERDA: GESTÃO DE ENCOMENDAS (AC1) */}
-          <section style={styles.sectionCard}>
-            <div style={styles.sectionHeader}>
-              <h3 style={styles.sectionTitle}>📦 Controle de Encomendas</h3>
-              <button onClick={carregarDadosDashboard} style={styles.btnRecarregar}>Atualizar</button>
-            </div>
+        <div style={styles.tabsNav}>
+          <button
+            onClick={() => setAbaAtiva('encomendas')}
+            style={abaAtiva === 'encomendas' ? styles.tabActive : styles.tabInactive}
+          >
+            📦 Controle de Encomendas
+          </button>
+          <button
+            onClick={() => setAbaAtiva('mural')}
+            style={abaAtiva === 'mural' ? styles.tabActive : styles.tabInactive}
+          >
+            📢 Mural de Avisos ({avisos.length})
+          </button>
+          <button
+            onClick={() => setAbaAtiva('normas')}
+            style={abaAtiva === 'normas' ? styles.tabActive : styles.tabInactive}
+          >
+            📜 Regimento & Normas ({normas.length})
+          </button>
+        </div>
 
-            <div style={styles.tableContainer}>
-              <table style={styles.table}>
-                <thead>
-                  <tr style={styles.tableHeaderRow}>
-                    <th style={styles.th}>Destinatário</th>
-                    <th style={styles.th}>Unidade</th>
-                    <th style={styles.th}>Código</th>
-                    <th style={styles.th}>Status</th>
-                    <th style={styles.th}>Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {encomendas.length > 0 ? (
-                    encomendas.map((enc) => (
-                      <tr key={enc.id} style={styles.tableRow}>
-                        <td style={styles.td}><strong>{enc.destinatario}</strong></td>
-                        <td style={styles.td}>{enc.bloco} - Apt {enc.apartamento}</td>
-                        <td style={styles.td}><code>{enc.codigo_rastreio || 'PORT-00' + enc.id}</code></td>
-                        <td style={styles.td}>
-                          <span style={enc.retirado ? styles.badgeRetirado : styles.badgePendente}>
-                            {enc.retirado ? 'Retirado' : 'Pendente'}
-                          </span>
-                        </td>
-                        <td style={styles.td}>
-                          {!enc.retirado ? (
-                            <button
-                              onClick={() => handleBaixaEncomenda(enc.id)}
-                              style={styles.btnBaixa}
-                            >
-                              Dar Baixa
-                            </button>
-                          ) : (
-                            <span style={{ color: '#6c757d', fontSize: '13px' }}>Concluído</span>
-                          )}
+        <div style={styles.panelCard}>
+          {abaAtiva === 'encomendas' && (
+            <div>
+              <div style={styles.panelControls}>
+                <input
+                  type="text"
+                  placeholder="Pesquisar morador, bloco ou apartamento..."
+                  value={filtroTexto}
+                  onChange={(e) => setFiltroTexto(e.target.value)}
+                  style={styles.searchBar}
+                />
+                <button onClick={carregarDados} style={styles.btnSecondary}>
+                  Atualizar Dados
+                </button>
+              </div>
+
+              <div style={styles.tableResponsive}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Destinatário</th>
+                      <th style={styles.th}>Apartamento / Bloco</th>
+                      <th style={styles.th}>Código</th>
+                      <th style={styles.th}>Status</th>
+                      <th style={{ ...styles.th, textAlign: 'right' }}>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {encomendasFiltradas.length > 0 ? (
+                      encomendasFiltradas.map((enc) => (
+                        <tr key={enc.id} style={styles.tr}>
+                          <td style={styles.td}>
+                            <strong>{enc.destinatario}</strong>
+                          </td>
+                          <td style={styles.td}>
+                            Bloco {enc.bloco} - Apt {enc.apartamento}
+                          </td>
+                          <td style={styles.td}>
+                            <span style={styles.codeTag}>
+                              {enc.codigo_rastreio || `PKG-00${enc.id}`}
+                            </span>
+                          </td>
+                          <td style={styles.td}>
+                            <span style={enc.retirado ? styles.badgeSuccess : styles.badgeWarning}>
+                              {enc.retirado ? 'Entregue' : 'Pendente'}
+                            </span>
+                          </td>
+                          <td style={{ ...styles.td, textAlign: 'right' }}>
+                            {!enc.retirado ? (
+                              <button
+                                onClick={() => handleBaixaEncomenda(enc.id)}
+                                style={styles.btnAction}
+                              >
+                                Dar Baixa
+                              </button>
+                            ) : (
+                              <span style={styles.textMuted}>Concluído</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" style={styles.emptyState}>
+                          Nenhum registro encontrado.
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#888' }}>
-                        Nenhuma encomenda registrada.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </section>
+          )}
 
-          {/* COLUNA DIREITA: COMUNICAÇÃO & NORMAS (AC2) */}
-          <div style={styles.sideColumn}>
-            {/* 1. MURAL INFORMATIVO */}
-            <section style={styles.sectionCard}>
-              <h3 style={styles.sectionTitle}>📢 Mural Informativo</h3>
-              <div style={styles.cardsList}>
-                {avisos.length > 0 ? (
-                  avisos.map((av) => (
-                    <div
-                      key={av.id}
-                      style={{
-                        ...styles.avisoItem,
-                        backgroundColor: av.fixado ? '#fffde7' : '#ffffff',
-                        borderColor: av.fixado ? '#ffe082' : '#e0e0e0'
-                      }}
-                    >
-                      <div style={styles.avisoHead}>
-                        <span style={styles.avisoTitulo}>
-                          {av.fixado && '📌 '}<strong>{av.titulo}</strong>
-                        </span>
-                      </div>
-                      <p style={styles.avisoTexto}>{av.conteudo}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p style={{ color: '#888', fontSize: '14px' }}>Nenhum comunicado ativo.</p>
-                )}
-              </div>
-            </section>
+          {abaAtiva === 'mural' && (
+            <div style={styles.cardsGrid}>
+              {avisos.map((aviso) => (
+                <div
+                  key={aviso.id}
+                  style={{
+                    ...styles.noticeCard,
+                    borderTop: aviso.fixado ? '4px solid #f4a261' : '4px solid #2a9d8f'
+                  }}
+                >
+                  <div style={styles.noticeHeader}>
+                    <h3 style={styles.noticeTitle}>
+                      {aviso.fixado && '📌 '} {aviso.titulo}
+                    </h3>
+                  </div>
+                  <p style={styles.noticeBody}>{aviso.conteudo}</p>
+                </div>
+              ))}
+            </div>
+          )}
 
-            {/* 2. REGIMENTO & NORMAS DE CONVIVÊNCIA */}
-            <section style={styles.sectionCard}>
-              <h3 style={styles.sectionTitle}>📜 Normas de Conduta</h3>
-              <div style={styles.cardsList}>
-                {normas.length > 0 ? (
-                  normas.map((norma) => (
-                    <div key={norma.id} style={styles.normaItem}>
-                      <span style={styles.normaTitulo}>• {norma.titulo}</span>
-                      <p style={styles.normaTexto}>{norma.conteudo}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p style={{ color: '#888', fontSize: '14px' }}>Regimento interno em atualização.</p>
-                )}
-              </div>
-            </section>
-          </div>
+          {abaAtiva === 'normas' && (
+            <div style={styles.rulesList}>
+              {normas.map((norma) => (
+                <div key={norma.id} style={styles.ruleCard}>
+                  <div style={styles.ruleTitleRow}>
+                    <span style={styles.ruleIcon}>⚖️</span>
+                    <strong style={styles.ruleName}>{norma.titulo}</strong>
+                  </div>
+                  <p style={styles.ruleDescription}>{norma.conteudo}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>
   );
 }
 
-// ESTILOS EM LINHA (SaaS Moderno / VetCare Palette)
 const styles = {
-  loginContainer: {
+  container: {
+    minHeight: '100vh',
+    backgroundColor: '#f8fafc',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    color: '#334155'
+  },
+  loginWrapper: {
     minHeight: '100vh',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f0fdf4',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    backgroundColor: '#f1f5f9'
   },
-  loginCard: {
+  loginBox: {
     backgroundColor: '#ffffff',
-    padding: '36px',
+    padding: '40px',
     borderRadius: '12px',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.06)',
+    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05)',
     width: '100%',
     maxWidth: '400px',
     textAlign: 'center'
   },
-  logoBadge: {
-    fontSize: '36px',
+  brandIconLarge: {
+    fontSize: '40px',
     marginBottom: '8px'
   },
-  loginTitle: {
+  titleLogin: {
     margin: 0,
     fontSize: '24px',
-    color: '#1b4332'
+    color: '#0f172a'
   },
-  loginSubtitle: {
-    margin: '4px 0 24px 0',
-    color: '#52b788',
-    fontSize: '14px'
+  subLogin: {
+    color: '#64748b',
+    fontSize: '14px',
+    margin: '4px 0 24px 0'
   },
-  alertaErro: {
+  erroBox: {
     backgroundColor: '#fee2e2',
-    color: '#b91c1c',
+    color: '#991b1b',
     padding: '10px',
     borderRadius: '6px',
     fontSize: '13px',
@@ -360,161 +388,208 @@ const styles = {
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '14px',
+    gap: '16px',
     textAlign: 'left'
   },
   inputGroup: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px'
+    gap: '6px'
   },
   label: {
     fontSize: '13px',
     fontWeight: '600',
-    color: '#2d3748'
+    color: '#475569'
   },
   input: {
-    padding: '10px 12px',
-    borderRadius: '6px',
+    padding: '11px 14px',
+    borderRadius: '8px',
     border: '1px solid #cbd5e1',
     fontSize: '14px',
     outline: 'none'
   },
-  btnPrimario: {
-    backgroundColor: '#2d6a4f',
+  btnPrimary: {
+    backgroundColor: '#0f172a',
     color: '#ffffff',
     border: 'none',
     padding: '12px',
-    borderRadius: '6px',
+    borderRadius: '8px',
     fontSize: '14px',
     fontWeight: '600',
     cursor: 'pointer',
-    marginTop: '8px'
+    marginTop: '6px'
   },
-  loginFooter: {
-    marginTop: '20px',
-    color: '#94a3b8'
-  },
-  appContainer: {
-    minHeight: '100vh',
-    backgroundColor: '#f8fafc',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-  },
-  header: {
+  navbar: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '14px 28px',
     backgroundColor: '#ffffff',
-    borderBottom: '1px solid #e2e8f0'
+    borderBottom: '1px solid #e2e8f0',
+    padding: '14px 36px'
   },
-  headerBrand: {
+  navBrand: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px'
+    gap: '12px'
   },
-  brandIcon: {
-    fontSize: '22px'
+  logoMark: {
+    fontSize: '28px'
   },
-  headerUser: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px'
+  brandText: {
+    margin: 0,
+    fontSize: '18px',
+    color: '#0f172a',
+    fontWeight: '700'
   },
-  btnSair: {
-    backgroundColor: 'transparent',
-    border: '1px solid #cbd5e1',
-    padding: '6px 12px',
-    borderRadius: '4px',
-    cursor: 'pointer',
+  tagline: {
     fontSize: '12px',
-    color: '#475569'
+    color: '#64748b'
   },
-  mainContent: {
-    padding: '24px 28px',
-    maxWidth: '1280px',
-    margin: '0 auto'
-  },
-  plantaoBar: {
-    backgroundColor: '#d8f3dc',
-    border: '1px solid #b7e4c7',
-    padding: '12px 18px',
-    borderRadius: '8px',
+  navRight: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '20px',
-    color: '#1b4332',
-    flexWrap: 'wrap',
-    gap: '10px'
+    gap: '24px'
   },
-  statusOnline: {
-    color: '#2d6a4f',
-    fontSize: '16px'
+  plantaoPill: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    backgroundColor: '#ecfdf5',
+    color: '#065f46',
+    border: '1px solid #a7f3d0',
+    padding: '6px 14px',
+    borderRadius: '20px',
+    fontSize: '13px'
   },
-  plantaoInfo: {
-    color: '#2d6a4f'
+  pulsingDot: {
+    color: '#10b981',
+    fontSize: '12px'
   },
-  kpiGrid: {
+  userProfile: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
+  },
+  avatar: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    backgroundColor: '#e2e8f0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '700',
+    color: '#334155'
+  },
+  userInfo: {
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  userName: {
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#0f172a'
+  },
+  userRole: {
+    fontSize: '11px',
+    color: '#64748b',
+    textTransform: 'capitalize'
+  },
+  btnLogout: {
+    background: 'none',
+    border: '1px solid #cbd5e1',
+    color: '#64748b',
+    padding: '5px 12px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '12px'
+  },
+  content: {
+    maxWidth: '1200px',
+    margin: '32px auto',
+    padding: '0 24px'
+  },
+  metricsRow: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '16px',
-    marginBottom: '20px'
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '20px',
+    marginBottom: '28px'
   },
-  kpiCard: {
+  metricCard: {
     backgroundColor: '#ffffff',
-    padding: '18px',
-    borderRadius: '8px',
+    borderRadius: '10px',
+    padding: '20px',
     border: '1px solid #e2e8f0',
     display: 'flex',
     flexDirection: 'column',
     gap: '6px'
   },
-  kpiLabel: {
+  metricLabel: {
     fontSize: '13px',
     color: '#64748b'
   },
-  kpiValue: {
-    fontSize: '24px',
+  metricNumber: {
+    fontSize: '28px',
     fontWeight: '700',
-    color: '#1b4332'
+    color: '#0f172a'
   },
-  dashboardGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1.6fr 1.2fr',
-    gap: '20px'
-  },
-  sideColumn: {
+  tabsNav: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '20px'
+    gap: '10px',
+    borderBottom: '1px solid #e2e8f0',
+    marginBottom: '20px'
   },
-  sectionCard: {
+  tabActive: {
     backgroundColor: '#ffffff',
-    padding: '20px',
-    borderRadius: '8px',
-    border: '1px solid #e2e8f0'
+    border: '1px solid #e2e8f0',
+    borderBottom: '2px solid #0f172a',
+    padding: '12px 20px',
+    borderRadius: '8px 8px 0 0',
+    fontWeight: '600',
+    fontSize: '14px',
+    color: '#0f172a',
+    cursor: 'pointer'
   },
-  sectionHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '16px'
-  },
-  sectionTitle: {
-    margin: 0,
-    fontSize: '16px',
-    color: '#1e293b'
-  },
-  btnRecarregar: {
+  tabInactive: {
     backgroundColor: 'transparent',
     border: 'none',
-    color: '#2d6a4f',
-    cursor: 'pointer',
-    fontSize: '13px',
-    fontWeight: '600'
+    padding: '12px 20px',
+    fontSize: '14px',
+    color: '#64748b',
+    cursor: 'pointer'
   },
-  tableContainer: {
+  panelCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: '10px',
+    border: '1px solid #e2e8f0',
+    padding: '24px'
+  },
+  panelControls: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginBottom: '20px',
+    gap: '12px'
+  },
+  searchBar: {
+    flex: 1,
+    maxWidth: '400px',
+    padding: '10px 14px',
+    border: '1px solid #cbd5e1',
+    borderRadius: '6px',
+    fontSize: '14px',
+    outline: 'none'
+  },
+  btnSecondary: {
+    backgroundColor: '#f1f5f9',
+    border: '1px solid #cbd5e1',
+    color: '#334155',
+    padding: '10px 16px',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer'
+  },
+  tableResponsive: {
     overflowX: 'auto'
   },
   table: {
@@ -522,88 +597,117 @@ const styles = {
     borderCollapse: 'collapse',
     textAlign: 'left'
   },
-  tableHeaderRow: {
-    borderBottom: '2px solid #f1f5f9'
-  },
   th: {
-    padding: '10px 12px',
+    padding: '12px 14px',
     fontSize: '12px',
-    textTransform: 'uppercase',
     color: '#64748b',
+    borderBottom: '1px solid #e2e8f0',
+    textTransform: 'uppercase',
     fontWeight: '600'
   },
-  tableRow: {
+  tr: {
     borderBottom: '1px solid #f1f5f9'
   },
   td: {
-    padding: '12px',
-    fontSize: '14px',
-    color: '#334155'
+    padding: '14px',
+    fontSize: '14px'
   },
-  badgePendente: {
-    backgroundColor: '#fef3c7',
-    color: '#b45309',
+  codeTag: {
+    backgroundColor: '#f1f5f9',
+    color: '#475569',
     padding: '4px 8px',
     borderRadius: '4px',
     fontSize: '12px',
+    fontFamily: 'monospace'
+  },
+  badgeWarning: {
+    backgroundColor: '#fff7ed',
+    color: '#c2410c',
+    padding: '4px 10px',
+    borderRadius: '12px',
+    fontSize: '12px',
     fontWeight: '600'
   },
-  badgeRetirado: {
-    backgroundColor: '#dcfce7',
+  badgeSuccess: {
+    backgroundColor: '#f0fdf4',
     color: '#15803d',
-    padding: '4px 8px',
-    borderRadius: '4px',
+    padding: '4px 10px',
+    borderRadius: '12px',
     fontSize: '12px',
     fontWeight: '600'
   },
-  btnBaixa: {
-    backgroundColor: '#2d6a4f',
+  btnAction: {
+    backgroundColor: '#0f172a',
     color: '#ffffff',
     border: 'none',
-    padding: '6px 10px',
-    borderRadius: '4px',
+    padding: '6px 14px',
+    borderRadius: '6px',
     fontSize: '12px',
     cursor: 'pointer'
   },
-  cardsList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-    marginTop: '12px'
+  textMuted: {
+    color: '#94a3b8',
+    fontSize: '13px'
   },
-  avisoItem: {
-    padding: '12px 14px',
-    borderRadius: '6px',
-    border: '1px solid #e2e8f0'
+  emptyState: {
+    textAlign: 'center',
+    padding: '30px',
+    color: '#94a3b8'
   },
-  avisoHead: {
-    marginBottom: '6px'
+  cardsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gap: '20px'
   },
-  avisoTitulo: {
-    fontSize: '14px',
+  noticeCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: '8px',
+    border: '1px solid #e2e8f0',
+    padding: '20px',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.02)'
+  },
+  noticeHeader: {
+    marginBottom: '8px'
+  },
+  noticeTitle: {
+    margin: 0,
+    fontSize: '16px',
     color: '#0f172a'
   },
-  avisoTexto: {
+  noticeBody: {
     margin: 0,
-    fontSize: '13px',
+    fontSize: '14px',
     color: '#475569',
-    lineHeight: '1.4'
+    lineHeight: '1.5'
   },
-  normaItem: {
+  rulesList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px'
+  },
+  ruleCard: {
     backgroundColor: '#f8fafc',
-    padding: '10px 14px',
-    borderRadius: '6px',
-    borderLeft: '3px solid #2d6a4f'
+    borderRadius: '8px',
+    border: '1px solid #e2e8f0',
+    padding: '16px 20px'
   },
-  normaTitulo: {
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#1e293b'
+  ruleTitleRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginBottom: '6px'
   },
-  normaTexto: {
-    margin: '4px 0 0 0',
-    fontSize: '12px',
-    color: '#64748b',
-    lineHeight: '1.4'
+  ruleIcon: {
+    fontSize: '18px'
+  },
+  ruleName: {
+    fontSize: '15px',
+    color: '#0f172a'
+  },
+  ruleDescription: {
+    margin: 0,
+    fontSize: '14px',
+    color: '#475569',
+    lineHeight: '1.5'
   }
 };

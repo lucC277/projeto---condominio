@@ -144,4 +144,4 @@ def cadastrar_plantao(dados: schemas.EscalaPlantaoCreate, db: Session = Depends(
     db.add(novo)
     db.commit()
     db.refresh(novo)
-    return novo
+    return novo# AC2 release
