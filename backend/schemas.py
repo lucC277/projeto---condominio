@@ -1,6 +1,44 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+
+
+class UsuarioBase(BaseModel):
+    nome: str
+    email: EmailStr
+    perfil: str
+
+class UsuarioCreate(UsuarioBase):
+    senha: str
+
+class UsuarioResponse(UsuarioBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+class UsuarioLogin(BaseModel):
+    email: str
+    senha: str
+
+
+class EncomendaBase(BaseModel):
+    destinatario: str
+    apartamento: str
+    bloco: str
+    codigo_rastreio: Optional[str] = None
+    retirado: bool = False
+
+class EncomendaCreate(EncomendaBase):
+    pass
+
+class EncomendaResponse(EncomendaBase):
+    id: int
+    data_recebimento: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
 
 class AvisoBase(BaseModel):
     titulo: str
@@ -18,6 +56,7 @@ class AvisoResponse(AvisoBase):
     class Config:
         from_attributes = True
 
+
 class EscalaPlantaoBase(BaseModel):
     funcionario_nome: str
     cargo: str
@@ -30,37 +69,6 @@ class EscalaPlantaoCreate(EscalaPlantaoBase):
 
 class EscalaPlantaoResponse(EscalaPlantaoBase):
     id: int
-
-    class Config:
-        from_attributes = True
-
-class EncomendaBase(BaseModel):
-    destinatario: str
-    bloco: str
-    apartamento: str
-    descricao_pacote: str
-
-class EncomendaCreate(EncomendaBase):
-    pass
-
-class EncomendaResponse(EncomendaBase):
-    id: int
-    retirado: bool
-
-    class Config:
-        from_attributes = True
-
-
-class OcorrenciaBase(BaseModel):
-    titulo: str
-    descricao: str
-
-class OcorrenciaCreate(OcorrenciaBase):
-    pass
-
-class OcorrenciaResponse(OcorrenciaBase):
-    id: int
-    status: str
 
     class Config:
         from_attributes = True
