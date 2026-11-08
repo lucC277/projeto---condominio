@@ -18,8 +18,13 @@ Plataforma SaaS moderna para gestão integrada de condomínios, desenvolvida com
 - **📜 Regimento & Normas de Convivência:** Consulta rápida e categorizada das regras internas (silêncio, horários de obras, circulação de pets) (`GET /avisos?tipo=norma`).
 - **🟢 Escala de Plantão da Portaria:** Indicador em tempo real exibido no cabeçalho informando o funcionário em turno e ramal de emergência ativo (`GET /plantao`).
 - **🔧 Tratamento Global de Exceções:** Handlers centralizados na API interceptando códigos HTTP (`400`, `401`, `404`, `422` e `500`), garantindo retornos JSON amigáveis sem exposição de tracebacks do servidor.
-- **Navegação Moderna em Abas:** Interface redesenhada com alternância instantânea entre Encomendas, Mural e Regimento.
 
+**AC3 - Regras de Negócio Avançadas & Interface Consolidada:**
+  * **Motor Anti-Conflito de Reservas:** Validação automática no backend impedindo duplicidade de agendamento de áreas comuns para a mesma data e período (`409 Conflict`).
+  * **Módulo Financeiro & Boletos:** Consulta de taxas condominiais mensais, status de liquidação e cópia de linha digitável.
+  * **Gestão de Ocorrências e Chamados:** Registro estruturado de incidentes com fluxo de transição de status (`aberto`, `em_analise`, `resolvido`).
+  * **Redesenho Front-end:** Interface unificada e orientada a componentes de Cards interativos para todos os módulos.
+- **Navegação Moderna em Abas:** Interface redesenhada com alternância instantânea entre Encomendas, Mural e Regimento.
 ---
 
 ## 🛠️ Tecnologias e Ferramentas
