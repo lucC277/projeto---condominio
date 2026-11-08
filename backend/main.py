@@ -8,16 +8,13 @@ from sqlalchemy.orm import Session
 from backend import models, schemas, security
 from backend.database import engine, get_db
 
-
 models.Base.metadata.create_all(bind=engine)
 
-
 app = FastAPI(
-    title="SíndicoHub API",
-    description="API para gestão integrada de condomínios residenciais",
-    version="2.0.0"
+    title="SíndicoHub - API Integrada",
+    description="SaaS de gestão integrada de condomínios residenciais",
+    version="3.0.0"
 )
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,8 +24,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-
+# --- TRATAMENTO GLOBAL DE EXCEÇÕES ---
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
@@ -44,42 +40,27 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "status": "erro",
-            "mensagem": exc.detail
-        }
+        content={"status": "erro", "mensagem": exc.detail}
     )
 
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "status": "erro_interno",
-            "mensagem": "Ocorreu um erro interno no servidor. Contate o administrador."
-        }
+        content={"status": "erro_interno", "mensagem": "Erro interno no servidor."}
     )
 
-
+# --- ROTAS BASE ---
 @app.get("/")
 def raiz():
-    return {"mensagem": "API SíndicoHub operacional", "versao": "2.0.0"}
+    return {"mensagem": "API SíndicoHub Operacional", "versao": "3.0.0"}
 
-
+# 1. Autenticação
 @app.post("/login")
 def login(dados: schemas.UsuarioLogin, db: Session = Depends(get_db)):
     usuario = db.query(models.Usuario).filter(models.Usuario.email == dados.email).first()
-    if not usuario:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="E-mail ou senha incorretos."
-        )
-
-    if not security.verificar_senha(dados.senha, usuario.senha_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="E-mail ou senha incorretos."
-        )
+    if not usuario or not security.verificar_senha(dados.senha, usuario.senha_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="E-mail ou senha incorretos.")
 
     return {
         "access_token": f"token_sessao_{usuario.id}",
@@ -92,7 +73,7 @@ def login(dados: schemas.UsuarioLogin, db: Session = Depends(get_db)):
         }
     }
 
-
+# 2. Encomendas
 @app.get("/encomendas", response_model=List[schemas.EncomendaResponse])
 def listar_encomendas(db: Session = Depends(get_db)):
     return db.query(models.Encomenda).order_by(models.Encomenda.id.desc()).all()
@@ -114,7 +95,7 @@ def dar_baixa_encomenda(encomenda_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensagem": "Encomenda marcada como retirada com sucesso."}
 
-
+# 3. Mural Informativo & Regimento
 @app.get("/avisos", response_model=List[schemas.AvisoResponse])
 def listar_avisos(tipo: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(models.Aviso)
@@ -124,13 +105,13 @@ def listar_avisos(tipo: Optional[str] = None, db: Session = Depends(get_db)):
 
 @app.post("/avisos", response_model=schemas.AvisoResponse, status_code=status.HTTP_201_CREATED)
 def criar_aviso(dados: schemas.AvisoCreate, db: Session = Depends(get_db)):
-    novo_aviso = models.Aviso(**dados.model_dump())
-    db.add(novo_aviso)
+    novo = models.Aviso(**dados.model_dump())
+    db.add(novo)
     db.commit()
-    db.refresh(novo_aviso)
-    return novo_aviso
+    db.refresh(novo)
+    return novo
 
-
+# 4. Escala de Plantão
 @app.get("/plantao", response_model=List[schemas.EscalaPlantaoResponse])
 def listar_plantoes(somente_ativos: bool = True, db: Session = Depends(get_db)):
     query = db.query(models.EscalaPlantao)
@@ -144,4 +125,51 @@ def cadastrar_plantao(dados: schemas.EscalaPlantaoCreate, db: Session = Depends(
     db.add(novo)
     db.commit()
     db.refresh(novo)
-    return novo# AC2 release
+    return novo
+
+# 5. Motor Anti-Conflito de Reservas (AC3)
+@app.get("/reservas", response_model=List[schemas.ReservaAreaResponse])
+def listar_reservas(db: Session = Depends(get_db)):
+    return db.query(models.ReservaArea).order_by(models.ReservaArea.data_reserva.asc()).all()
+
+@app.post("/reservas", response_model=schemas.ReservaAreaResponse, status_code=status.HTTP_201_CREATED)
+def criar_reserva(dados: schemas.ReservaAreaCreate, db: Session = Depends(get_db)):
+    conflito = db.query(models.ReservaArea).filter(
+        models.ReservaArea.area == dados.area,
+        models.ReservaArea.data_reserva == dados.data_reserva,
+        models.ReservaArea.periodo == dados.periodo
+    ).first()
+
+    if conflito:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"A área '{dados.area}' já está reservada para o dia {dados.data_reserva} no período {dados.periodo}."
+        )
+
+    nova_reserva = models.ReservaArea(**dados.model_dump())
+    db.add(nova_reserva)
+    db.commit()
+    db.refresh(nova_reserva)
+    return nova_reserva
+
+# 6. Ocorrências e Chamados (AC3)
+@app.get("/ocorrencias", response_model=List[schemas.OcorrenciaResponse])
+def listar_ocorrencias(db: Session = Depends(get_db)):
+    return db.query(models.Ocorrencia).order_by(models.Ocorrencia.id.desc()).all()
+
+@app.post("/ocorrencias", response_model=schemas.OcorrenciaResponse, status_code=status.HTTP_201_CREATED)
+def registrar_ocorrencia(dados: schemas.OcorrenciaCreate, db: Session = Depends(get_db)):
+    nova = models.Ocorrencia(**dados.model_dump())
+    db.add(nova)
+    db.commit()
+    db.refresh(nova)
+    return nova
+
+@app.put("/ocorrencias/{ocorrencia_id}/status")
+def atualizar_status_ocorrencia(ocorrencia_id: int, dados: schemas.OcorrenciaUpdateStatus, db: Session = Depends(get_db)):
+    ocorrencia = db.query(models.Ocorrencia).filter(models.Ocorrencia.id == ocorrencia_id).first()
+    if not ocorrencia:
+        raise HTTPException(status_code=404, detail="Ocorrência não encontrada.")
+    ocorrencia.status = dados.status
+    db.commit()
+    return {"mensagem": "Status da ocorrência atualizado com sucesso."}

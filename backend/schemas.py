@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
-
+# --- USUÁRIOS & AUTENTICAÇÃO ---
 class UsuarioBase(BaseModel):
     nome: str
-    email: EmailStr
+    email: str
     perfil: str
 
 class UsuarioCreate(UsuarioBase):
@@ -21,7 +21,7 @@ class UsuarioLogin(BaseModel):
     email: str
     senha: str
 
-
+# --- ENCOMENDAS ---
 class EncomendaBase(BaseModel):
     destinatario: str
     apartamento: str
@@ -39,7 +39,7 @@ class EncomendaResponse(EncomendaBase):
     class Config:
         from_attributes = True
 
-
+# --- AVISOS & REGRAS ---
 class AvisoBase(BaseModel):
     titulo: str
     conteudo: str
@@ -56,7 +56,7 @@ class AvisoResponse(AvisoBase):
     class Config:
         from_attributes = True
 
-
+# --- ESCALA DE PLANTÃO ---
 class EscalaPlantaoBase(BaseModel):
     funcionario_nome: str
     cargo: str
@@ -69,6 +69,47 @@ class EscalaPlantaoCreate(EscalaPlantaoBase):
 
 class EscalaPlantaoResponse(EscalaPlantaoBase):
     id: int
+
+    class Config:
+        from_attributes = True
+
+# --- RESERVAS (AC3) ---
+class ReservaAreaBase(BaseModel):
+    area: str
+    morador_nome: str
+    apartamento: str
+    bloco: str
+    data_reserva: date
+    periodo: str
+
+class ReservaAreaCreate(ReservaAreaBase):
+    pass
+
+class ReservaAreaResponse(ReservaAreaBase):
+    id: int
+    criado_em: datetime
+
+    class Config:
+        from_attributes = True
+
+# --- OCORRÊNCIAS (AC3) ---
+class OcorrenciaBase(BaseModel):
+    titulo: str
+    descricao: str
+    morador_nome: str
+    apartamento: str
+    bloco: str
+
+class OcorrenciaCreate(OcorrenciaBase):
+    pass
+
+class OcorrenciaUpdateStatus(BaseModel):
+    status: str
+
+class OcorrenciaResponse(OcorrenciaBase):
+    id: int
+    status: str
+    data_abertura: datetime
 
     class Config:
         from_attributes = True
